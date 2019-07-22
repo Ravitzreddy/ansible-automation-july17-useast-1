@@ -1,9 +1,6 @@
 ---
   - hosts: localhost
     connection: local
-    become: true---
-  - hosts: localhost
-    connection: local
     become: true
     tasks:
       - name: create instances for app servers
