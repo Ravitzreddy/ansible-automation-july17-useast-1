@@ -6,7 +6,7 @@
       - name: create route table for public subnets and add IGW to route 
         ec2_vpc_route_table:
           vpc_id: "{{ item.1.igrvpc }}"
-          region: "{{ item.1.igrregion }}"
+          region: "{{ item.1.igr"{{main_region}}" }}"
           subnets: "{{ item.1.igrsubnet }}"
           routes:
             - dest: 0.0.0.0/0
