@@ -28,7 +28,7 @@
       # replace function
       - name: replace NGW name with NGW id
         replace:
-          path: /etc/ansible/ap-south-1/group_vars/all3.yaml
+          path: /etc/ansible/"{{main_region}}"/group_vars/all3.yaml
           regexp: "{{ item.key }}"
           replace: "{{ item.value }}"
         with_dict: "{{ natgw_id }}"
@@ -36,7 +36,7 @@
 
       - name: get mainroutes id to given vpcid
         ec2_vpc_route_table_facts:
-          region: ap-south-1
+          region: "{{main_region}}"
           filters:
             vpc-id: "{{ item.1.ngrvpc }}"
             "association.main": "true"
@@ -57,18 +57,16 @@
       # copy all3.yaml to all4.yaml
       - name: copy all3 to all4
         copy:
-          src: /etc/ansible/ap-south-1/group_vars/all3.yaml
-          dest: /etc/ansible/ap-south-1/group_vars/all4.yaml
+          src: /etc/ansible/"{{main_region}}"/group_vars/all3.yaml
+          dest: /etc/ansible/"{{main_region}}"/group_vars/all4.yaml
 
       # replace function
       - name: replace natgateway names with nat gateway ids with VPC-ids
         replace:
-          path: /etc/ansible/ap-south-1/group_vars/all4.yaml
+          path: /etc/ansible/"{{main_region}}"/group_vars/all4.yaml
           regexp: "{{ item.key }}"
           replace: "{{ item.value }}"
         with_dict: "{{ mainroute_vpcs }}"
       
 
-      # next run auto-ngw-route.yaml    
-      
-                      
+      # next run auto-ngw-route.yaml
