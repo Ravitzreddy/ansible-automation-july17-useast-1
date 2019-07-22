@@ -55,15 +55,15 @@
       # copy var file all5.yaml to all6.yaml
       - name: copy var file all5.yaml to all6.yaml
         copy:
-          src: /etc/ansible/ap-south-1/group_vars/all5.yaml
-          dest: /etc/ansible/ap-south-1/group_vars/all6.yaml
+          src: /etc/ansible/"{{main_region}}"/group_vars/all5.yaml
+          dest: /etc/ansible/"{{main_region}}"/group_vars/all6.yaml
           follow: yes
 
 
       # replace function
       - name: replace appebserv sec grp names with sec grp ids in var file all6.yaml
         replace:
-          path: /etc/ansible/ap-south-1/group_vars/all6.yaml
+          path: /etc/ansible/"{{main_region}}"/group_vars/all6.yaml
           regexp: "{{ item.key }}"
           replace: "{{ item.value }}"
         with_dict: "{{ apsouth1_appsecgrps }}"
