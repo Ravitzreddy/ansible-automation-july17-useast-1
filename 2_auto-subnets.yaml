@@ -3,7 +3,7 @@
     connection: local
     become: true
     tasks:
-      # Create subnet for ap-south-1a AZ
+      # Create subnet for us-east-1a AZ
       - name: create subnets for az apsouth1a
         ec2_vpc_subnet:
           state: present
@@ -21,7 +21,7 @@
           - "{{subnetsapsouth1a}}"
           - configs
 
-      # Create subnet for ap-south-1b AZ
+      # Create subnet for "{{main_region}}"b AZ
       - name: create subnets for az apsouth1b
         ec2_vpc_subnet:
           state: present
@@ -88,14 +88,14 @@
       # copy var file all2.yaml to all3.yaml
       - name: copy var file all2.yaml to all3.yaml
         copy:
-          src: /etc/ansible/ap-south-1/group_vars/all2.yaml
-          dest: /etc/ansible/ap-south-1/group_vars/all3.yaml
+          src: /etc/ansible/"{{main_region}}"/group_vars/all2.yaml
+          dest: /etc/ansible/"{{main_region}}"/group_vars/all3.yaml
           follow: yes
 
       # replace function
       - name: replace subnet names with subnet id's in var file all3.yaml
         replace:
-          path: /etc/ansible/ap-south-1/group_vars/all3.yaml
+          path: /etc/ansible/"{{main_region}}"/group_vars/all3.yaml
           regexp: "{{ item.key }}"
           replace: "{{ item.value }}"
         with_dict: "{{ subnet_ids }}"
@@ -103,8 +103,9 @@
       # replace function
       - name: replace webserv sec grp names with sec grp ids in var file all3.yaml
         replace:
-          path: /etc/ansible/ap-south-1/group_vars/all3.yaml
+          path: /etc/ansible/"{{main_region}}"/group_vars/all3.yaml
           regexp: "{{ item.key }}"
           replace: "{{ item.value }}"
         with_dict: "{{ apsouth1_secgrps }}"
+
       
