@@ -59,15 +59,15 @@
       # copy var file all7.yaml to all8.yaml
       - name: copy var file all7.yaml to all8.yaml
         copy:
-          src: /etc/ansible/ap-south-1/group_vars/all7.yaml
-          dest: /etc/ansible/ap-south-1/group_vars/all8.yaml
+          src: /etc/ansible/"{{main_region}}"/group_vars/all7.yaml
+          dest: /etc/ansible/"{{main_region}}"/group_vars/all8.yaml
           follow: yes
 
 
       # replace function
       - name: replace dbwebserv sec grp names with sec grp ids in var file all8.yaml
         replace:
-          path: /etc/ansible/ap-south-1/group_vars/all8.yaml
+          path: /etc/ansible/"{{main_region}}"/group_vars/all8.yaml
           regexp: "{{ item.key }}"
           replace: "{{ item.value }}"
         with_dict: "{{ apsouth1_dbsecgrps }}"
