@@ -1,0 +1,19 @@
+---
+  - hosts: localhost
+    connection: local
+    become: true
+    tasks:
+      - name: create directory if they don't exist
+        file:
+          path: "{{ item }}"
+          state: directory
+          owner: ansadmin
+          mode: 0777
+        with_items:
+          - /etc/ansible/ap-south-1
+          - /etc/ansible/ap-south-1/group_vars
+      - name: copy files from /home/ansadmin /etc/ansible
+        shell: 'cp -p {{ item.src }} {{ item.dest }}'
+        with_items:
+          - { src: '/home/ansadmin/*.yaml',dest: '/etc/ansible/ap-south-1/', mode: '0777'}
+          - { src: '/home/ansadmin/group_vars/*.yaml',dest: '/etc/ansible/ap-south-1/group_vars/', mode: '0777'}

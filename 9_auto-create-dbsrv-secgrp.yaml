@@ -1,0 +1,74 @@
+---
+  - hosts: localhost
+    connection: local
+    become: true
+    tasks:
+      - name: create appserver sec groups
+        ec2_group:
+          name: "{{item.0.secgrpname}}"
+          description: "{{item.1.secgrpdesc}}"
+          region: "{{item.1.secregion}}"
+          vpc_id: "{{item.1.secvpcid}}"
+          rules:
+            - proto: tcp
+              from_port: 3389
+              to_port: 3389
+              cidr_ip: "{{item.1.sectarget1}}"
+            - proto: tcp
+              from_port: 3389
+              to_port: 3389
+              cidr_ip: "{{item.1.sectarget2}}"
+            - proto: tcp
+              from_port: 3306
+              to_port: 3306
+              cidr_ip: "{{item.1.sectarget1}}"
+            - proto: tcp
+              from_port: 3306
+              to_port: 3306
+              cidr_ip: "{{item.1.sectarget2}}"
+            - proto: tcp
+              from_port: 22
+              to_port: 22
+              cidr_ip: "{{item.1.sectarget1}}"
+            - proto: tcp
+              from_port: 22
+              to_port: 22
+              cidr_ip: "{{item.1.sectarget2}}"
+          rules_egress:
+            - proto: all
+              from_port: 80
+              to_port: 80
+              cidr_ip: 0.0.0.0/0
+        register: dbservers_group
+        with_subelements:
+          - "{{create_dbserver_sec_groups}}"
+          - configurations
+
+
+      - name: set facts of dbservers_group
+        set_fact:
+          apsouth1_dbsecgrps: "{{ apsouth1_dbsecgrps | default({}) | combine({item.group_name: item.group_id}) }}"
+        loop: "{{dbservers_group.results}}"
+
+      - name: debugapsouth1_dbsecgrps
+        debug:
+          msg: "{{item.key}} : {{item.value}}"
+        with_dict: "{{apsouth1_dbsecgrps}}"
+
+
+      # copy var file all7.yaml to all8.yaml
+      - name: copy var file all7.yaml to all8.yaml
+        copy:
+          src: /etc/ansible/ap-south-1/group_vars/all7.yaml
+          dest: /etc/ansible/ap-south-1/group_vars/all8.yaml
+          follow: yes
+
+
+      # replace function
+      - name: replace dbwebserv sec grp names with sec grp ids in var file all8.yaml
+        replace:
+          path: /etc/ansible/ap-south-1/group_vars/all8.yaml
+          regexp: "{{ item.key }}"
+          replace: "{{ item.value }}"
+        with_dict: "{{ apsouth1_dbsecgrps }}"
+

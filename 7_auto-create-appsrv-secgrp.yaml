@@ -1,0 +1,70 @@
+---
+  - hosts: localhost
+    connection: local
+    become: true
+    tasks:
+      - name: create appserver sec groups
+        ec2_group:
+          name: "{{item.0.secgrpname}}"
+          description: "{{item.1.secgrpdesc}}"
+          region: "{{item.1.secregion}}"
+          vpc_id: "{{item.1.secvpcid}}"
+          rules:
+            - proto: tcp
+              from_port: 80
+              to_port: 80
+              cidr_ip: "{{item.1.sectarget1}}"
+            - proto: tcp
+              from_port: 80
+              to_port: 80
+              cidr_ip: "{{item.1.sectarget2}}"
+            - proto: tcp
+              from_port: 22
+              to_port: 22
+              cidr_ip: "{{item.1.sectarget1}}"
+            - proto: tcp
+              from_port: 22
+              to_port: 22
+              cidr_ip: "{{item.1.sectarget2}}"
+          rules_egress:
+            - proto: tcp
+              from_port: 80
+              to_port: 80
+              cidr_ip: "{{item.1.sectarget1}}"
+            - proto: tcp
+              from_port: 80
+              to_port: 80
+              cidr_ip: "{{item.1.sectarget2}}" 
+        register: appservers_group
+        with_subelements:
+          - "{{create_appserver_sec_groups}}"
+          - configurations
+
+
+      - name: set facts of appservers_group
+        set_fact:
+          apsouth1_appsecgrps: "{{ apsouth1_appsecgrps | default({}) | combine({item.group_name: item.group_id}) }}"
+        loop: "{{appservers_group.results}}"
+
+      - name: debugapsouth1_appsecgrps
+        debug:
+          msg: "{{item.key}} : {{item.value}}"
+        with_dict: "{{apsouth1_appsecgrps}}"
+
+
+      # copy var file all5.yaml to all6.yaml
+      - name: copy var file all5.yaml to all6.yaml
+        copy:
+          src: /etc/ansible/ap-south-1/group_vars/all5.yaml
+          dest: /etc/ansible/ap-south-1/group_vars/all6.yaml
+          follow: yes
+
+
+      # replace function
+      - name: replace appebserv sec grp names with sec grp ids in var file all6.yaml
+        replace:
+          path: /etc/ansible/ap-south-1/group_vars/all6.yaml
+          regexp: "{{ item.key }}"
+          replace: "{{ item.value }}"
+        with_dict: "{{ apsouth1_appsecgrps }}"
+
