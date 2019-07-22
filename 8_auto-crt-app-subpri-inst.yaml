@@ -1,7 +1,75 @@
 ---
   - hosts: localhost
     connection: local
+    become: true---
+  - hosts: localhost
+    connection: local
     become: true
+    tasks:
+      - name: create instances for app servers
+        ec2:
+          key_name: "{{item.1.inskeyname}}"
+          instance_type: "{{item.1.instype}}"
+          image: "{{item.1.insimage}}"
+          region: "{{item.1.insregion}}"
+          group_id: "{{item.1.inssecgrp}}"
+          wait: yes
+          instance_tags: 
+            Name: "{{item.0.instname}}"
+            Publicip: "{{item.1.inspubiptag}}"
+            Privateip: "{{item.1.inspriiptag}}"
+          count: 1
+          count_tag:
+            application: appservers
+          vpc_subnet_id: "{{item.1.insvpcsubnetid}}"
+          state: present
+        register: ec2_inst_app  
+        with_subelements:
+          - "{{crt_inst_app}}"
+          - configs
+
+      - name: debug
+        debug:
+          msg: "{{ec2_inst_app}}"
+
+      - name: setfactsget public ipaddresses of instances into dict
+        set_fact: 
+          appprisubs_vpcc_instances: "{{appprisubs_vpcc_instances | default({}) | combine({item.invocation.module_args.instance_tags.Name: item.instances[0].id}) }}"
+          appprisubs_vpcc_pubips: "{{appprisubs_vpcc_pubips | default({}) | combine({item.invocation.module_args.instance_tags.Publicip: item.instances[0].public_ip}) }}"
+          appprisubs_vpcc_priips: "{{appprisubs_vpcc_priips | default({}) | combine({item.invocation.module_args.instance_tags.Privateip: item.instances[0].private_ip}) }}"
+
+        loop: "{{ec2_inst_app.results}}"
+
+      - name: debug pubsubs_vpcc_instances
+        debug:
+          msg: 
+            - "{{appprisubs_vpcc_instances}}"
+            - "{{appprisubs_vpcc_pubips}}"
+            - "{{appprisubs_vpcc_priips}}"
+      # copy all5.yaml to all6.yaml to assign public instances parametres from facts
+      - name: copy all6yaml to all7yaml
+        copy:
+          src: /etc/ansible/"{{main_region}}"/group_vars/all6.yaml
+          dest: /etc/ansible/"{{main_region}}"/group_vars/all7.yaml
+      # replace the keys and values from loops
+      - name: replace the keys and values from loops
+        replace:
+          path: /etc/ansible/"{{main_region}}"/group_vars/all7.yaml
+          regexp: "{{ item.key }}"
+          replace: "{{ item.value }}/32"
+        with_dict:
+          - "{{appprisubs_vpcc_priips}}"
+
+      # replace the keys and values from loops
+      - name: replace the keys and values from loops
+        replace:
+          path: /etc/ansible/"{{main_region}}"/group_vars/all7.yaml
+          regexp: "{{ item.key }}"
+          replace: "{{ item.value }}"
+        with_dict:
+          - "{{appprisubs_vpcc_instances}}"
+
+
     tasks:
       - name: create instances for app servers
         ec2:
