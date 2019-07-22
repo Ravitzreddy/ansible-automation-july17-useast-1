@@ -4,11 +4,11 @@
     become: true
     #vars:
     #  vpcs:
-    #    - vpcname: VPC-A
+    #    - vpcname: VPC-C
     #      configurations:
     #        - vpccidr: 10.0.0.0/16
-    #          vpcregion: ap-south-1
-    #    - vpcname: VPC-B
+    #          vpcregion: "{{main_region}}"
+    #    - vpcname: VPC-D
     #      configurations:
     #        - vpccidr: 10.1.0.0/16
     #          vpcregion: us-west-1
@@ -79,22 +79,22 @@
       # Copy var file all1.yaml to all2.yaml
       - name: copy files all1.yaml to all2.yaml
         copy:
-          src: /etc/ansible/ap-south-1/group_vars/all1.yaml
-          dest: /etc/ansible/ap-south-1/group_vars/all2.yaml
+          src: /etc/ansible/"{{main_region}}"/group_vars/all1.yaml
+          dest: /etc/ansible/"{{main_region}}"/group_vars/all2.yaml
           follow: yes 
    
       # replace function 
-      - name: replace VPC-A VPC-B with VPC-ids
+      - name: replace VPC-C VPC-D with VPC-ids
         replace:
-          path: /etc/ansible/ap-south-1/group_vars/all2.yaml
+          path: /etc/ansible/"{{main_region}}"/group_vars/all2.yaml
           regexp: "{{ item.key }}"
           replace: "{{ item.value }}"
         with_dict: "{{ vpc_ids }}"
 
       # replace function for IGW routes
-      - name: replace vpc-a-igw and vpc-b-igw in var file all2.yaml
+      - name: replace VPC-C-igw and VPC-D-igw in var file all2.yaml
         replace:
-          path: /etc/ansible/ap-south-1/group_vars/all2.yaml
+          path: /etc/ansible/"{{main_region}}"/group_vars/all2.yaml
           regexp: "{{ item.key }}"
           replace: "{{ item.value }}"
         with_dict: "{{igw_ids}}"  
@@ -103,8 +103,5 @@
 
       # Create SN
       #- name: execute bash command to execute playbbok of subnet
-      #  shell: AWS_PROFILE=personal ansible-playbook -i /etc/ansible/ec2.py /etc/ansible/ap-south-1/auto-subnets.yaml -e @/etc/ansible/ap-south-1/group_vars/all2.yaml -vvvv
+      #  shell: AWS_PROFILE=personal ansible-playbook -i /etc/ansible/ec2.py /etc/ansible/"{{main_region}}"/auto-subnets.yaml -e @/etc/ansible/"{{main_region}}"/group_vars/all2.yaml -vvvv
       #  register: shell_sn
-
-
-    
