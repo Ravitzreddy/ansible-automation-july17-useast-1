@@ -1,0 +1,224 @@
+---
+  mainregion: us-east-1
+
+  vpcs:
+    - vpcname: VPC-C
+      configurations:
+        - vpccidr: 10.2.0.0/16
+          vpcregion: us-east-1
+          IGW: yes
+    - vpcname: VPC-D
+      configurations:
+        - vpccidr: 10.3.0.0/16
+          vpcregion: us-east-1
+          IGW: yes
+  
+  subnetsapsouth1a:
+    - subnetname: SUB1-PUB-VPCC
+      configs:
+        - subcidr: 10.2.5.0/24
+          subaz: us-east-1a
+          subreg: us-east-1
+          subvpcid: VPC-C
+          subtags: publicsubnet-vpc3
+          sumap_public: yes
+    - subnetname: SUB2-PRI-VPCC
+      configs:
+        - subcidr: 10.2.6.0/24
+          subaz: us-east-1a
+          subreg: us-east-1
+          subvpcid: VPC-C
+          subtags: privatesubnet-vpc3
+          sumap_public: no
+    - subnetname: SUB3-PRI-VPCC
+      configs:
+        - subcidr: 10.2.7.0/24
+          subaz: us-east-1a
+          subreg: us-east-1
+          subvpcid: VPC-C
+          subtags: privatesubnet-vpc3
+          sumap_public: no
+    - subnetname: SUB4-PRI-VPCD
+      configs:
+        - subcidr: 10.3.8.0/24
+          subaz: us-east-1a
+          subreg: us-east-1
+          subvpcid: VPC-D
+          subtags: privatesubnet-vpc4
+          sumap_public: no
+    - subnetname: SUB6-PUB-VPCD
+      configs:
+        - subcidr: 10.3.9.0/24
+          subaz: us-east-1a
+          subreg: us-east-1
+          subvpcid: VPC-D
+          subtags: publicsubnet-vpc4
+          sumap_public: no
+        
+  subnetsapsouth1b:
+    - subnetname: SUB5-PUB-VPCC
+      configs:
+        - subcidr: 10.2.10.0/24
+          subaz: us-east-1b
+          subreg: us-east-1
+          subvpcid: VPC-C
+          subtags: publicsubnet-vpc3
+          sumap_public: yes
+
+    
+  igw_routes:
+    - routename: SUB1-PUBL-VPCC-IGW
+      confs:
+        - igrvpc: VPC-C
+          igrregion: us-east-1
+          igrsubnet: SUB1-PUB-VPCC
+          igrgatewayid: VPC-C-IGW
+    - routename: SUB5-PUBL-VPCC-IGW
+      confs:
+        - igrvpc: VPC-C
+          igrregion: us-east-1
+          igrsubnet: SUB5-PUB-VPCC
+          igrgatewayid: VPC-C-IGW
+    - routename: SUB6-PUBL-VPCD-IGW
+      confs:
+        - igrvpc: VPC-D
+          igrregion: us-east-1
+          igrsubnet: SUB6-PUB-VPCD
+          igrgatewayid: VPC-D-IGW
+
+
+  # variables for nat gateway to DB subnet SUB3-PRI-VPCC
+  natgateways:
+    - natgatewayname: SUB3-PRIV-VPCC-NATGW
+      configure:
+        - ngsubnet: SUB1-PUB-VPCC
+          ngregion: us-east-1
+    - natgatewayname: SUB4-PRIV-VPCD-NATGW
+      configure:
+        - ngsubnet: SUB6-PUB-VPCD
+          ngregion: us-east-1
+    
+
+  # create route record to VPCC main route table and associate subnet SUB3-PRI-VPCC
+  ngw_routes:
+    - routename: SUB3-PRI-VPC--C-NATROUTE
+      con:
+        - ngrvpc: VPC-C
+          ngrvpccidr: 10.2.0.0/16
+          ngrregion: us-east-1
+          ngrsubnet: SUB3-PRI-VPCC
+          ngrgatewayid: SUB3-PRIV-VPCC-NATGW
+          ngrrouteid: SUB3-PRI-VPC--C-NATROUTE
+    - routename: SUB4-PRI-VPC--D-NATROUTE
+      con:
+        - ngrvpc: VPC-D
+          ngrvpccidr: 10.3.0.0/16
+          ngrregion: us-east-1
+          ngrsubnet: SUB4-PRI-VPCD
+          ngrgatewayid: SUB4-PRIV-VPCD-NATGW
+          ngrrouteid: SUB4-PRI-VPC--D-NATROUTE
+
+  # create basic subnets that allow public to access web servers in VPC-C and VPC-D
+  create_webserver_sec_groups:
+    - secgrpname: webinst-VPCC
+      configurations:
+        - secgrpdesc: sec grp for web servers for VPCC
+          secvpcid: VPC-C
+          secregion: us-east-1
+    - secgrpname: webinst-VPCD
+      configurations:
+        - secgrpdesc: sec grp for web servers for VPCD
+          secvpcid: VPC-D
+          secregion: us-east-1
+  # create keyair for us-east-1 region
+  #createkeypair:
+  #  - kpname: apsouth1keypair1
+  #    cons:
+  #      - kpregion: us-east-1
+  #  - kpname: apsouth1keypair2
+  #    cons: 
+  #      - kpregion: us-east-1
+
+  
+  # create instance
+  crt_inst:
+    - instname: INST1-SUBPUB1-VPCC
+      configs:
+        - inskeyname: myprimeadmkeypair
+          instype: t2.micro
+          insimage: ami-0a74bfeb190bd404f
+          insregion: us-east-1
+          inssecgrp: webinst-VPCC
+          instags: INSTANCESUBPUB1VPCC-INST1-SUBPUB1-VPCC
+          inspubiptag: INST1SUBPUB1VPCCPUBLICIP
+          inspriiptag: INST1SUBPUB1VPCCPRIVATEIP
+          inscount: 1
+          insvpcsubnetid: SUB1-PUB-VPCC
+          insasspubip: yes
+    - instname: INST2-SUBPUB5-VPCC
+      configs:
+        - inskeyname: myprimeadmkeypair
+          instype: t2.micro
+          insimage: ami-0a74bfeb190bd404f
+          insregion: us-east-1
+          inssecgrp: webinst-VPCC
+          instags: INSTANCESUBPUB1VPCC-INST2-SUBPUB5-VPCC
+          inspubiptag: INST2SUBPUB1VPCCPUBLICIP
+          inspriiptag: INST2SUBPUB1VPCCPRIVATEIP
+          inscount: 1
+          insvpcsubnetid: SUB5-PUB-VPCC
+          insasspubip: yes
+     
+  # Create sec groups to app servers in VPCC private subnets
+  create_appserver_sec_groups:
+    - secgrpname: appinst-VPCC
+      configurations:
+        - secgrpdesc: sec grp for app servers for VPCC
+          secvpcid: VPC-C
+          secregion: us-east-1
+          sectarget1: INST1SUBPUB1VPCCPRIVATEIP
+          sectarget2: INST2SUBPUB1VPCCPRIVATEIP 
+    
+  # create instance in appserver of subpri2 in VPCC
+  crt_inst_app:
+    - instname: INST3-SUBPRI2-VPCC
+      configs:
+        - inskeyname: myprimeadmkeypair
+          instype: t2.micro
+          insimage: ami-0a74bfeb190bd404f
+          insregion: us-east-1
+          inssecgrp: appinst-VPCC
+          instags: INSTANCESUBPRI2VPCC-INST2-SUBPRI2-VPCC
+          inspubiptag: INST3SUBPRI2VPCCPUBLICIP
+          inspriiptag: INST3SUBPRI2VPCCPRIVATEIP
+          inscount: 1
+          insvpcsubnetid: SUB2-PRI-VPCC
+          insasspubip: no
+
+  # Create sec groups to DB servers in VPCC private subnets
+  create_dbserver_sec_groups:
+    - secgrpname: dbinst-VPCC
+      configurations:
+        - secgrpdesc: sec grp for db servers for VPCC
+          secvpcid: VPC-C
+          secregion: us-east-1
+          sectarget1: INST3SUBPRI2VPCCPRIVATEIP
+          sectarget2: INST1SUBPUB1VPCCPRIVATEIP
+          sectarget3: INST2SUBPUB1VPCCPRIVATEIP
+
+
+  # create instance
+  crt_inst_db:
+    - instname: INST4-SUBPRI3-VPCC
+      configs:
+        - inskeyname: myprimeadmkeypair
+          instype: t2.micro
+          insimage: ami-0a74bfeb190bd404f
+          insregion: us-east-1
+          inssecgrp: dbinst-VPCC
+          instags: INSTANCESUBPRI3VPCC-INST4-SUBPRI3-VPCC
+          inspubiptag: INST4SUBPRI3VPCCPUBLICIP
+          inspriiptag: INST4SUBPRI3VPCCPRIVATEIP
+          inscount: 1
+          insvpcsubnetid: SUB3-PRI-VPCC
+          insasspubip: no
